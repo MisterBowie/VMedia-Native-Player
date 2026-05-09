@@ -1,0 +1,276 @@
+/* VMedia — IINA-style pure-icon control bar */
+
+window {
+    background-color: #1a1a1e;
+    color: #e8e8ec;
+}
+
+.video-area {
+    background-color: #000000;
+}
+
+/* ── Placeholder ── */
+.placeholder-container {
+    background: transparent;
+}
+
+.placeholder-icon {
+    opacity: 0.35;
+    color: #888;
+    -gtk-icon-size: 80px;
+}
+
+.placeholder-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #b0b0b8;
+}
+
+.placeholder-hint {
+    font-size: 13px;
+    color: #555560;
+    line-height: 2;
+}
+
+/* ── Back button ← ── */
+.back-button {
+    background-color: rgba(255,255,255,0.1);
+    color: #fff;
+    border-radius: 50%;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px;
+    border: 1px solid rgba(255,255,255,0.12);
+}
+.back-button:hover {
+    background-color: rgba(255,255,255,0.18);
+}
+
+/* ── Bottom wrapper ── */
+.controls-bottom {
+    background: transparent;
+    padding: 0;
+}
+
+/* ═══════════════════════════════
+   GLASS PANEL — floating bar
+   ═══════════════════════════════ */
+.control-bar {
+    background-color: rgba(20, 20, 26, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+    padding: 6px 6px 6px 6px;
+}
+
+
+
+/* ── Seek Bar ── */
+.seek-bar {
+    padding: 6px 0;
+}
+.seek-bar trough {
+    min-height: 2px;
+    border-radius: 1px;
+    background-color: rgba(255,255,255,0.15);
+}
+.seek-bar trough highlight {
+    background-color: rgba(255,255,255,0.85);
+    border-radius: 1px;
+    min-height: 2px;
+}
+.seek-bar slider {
+    min-width: 8px;
+    min-height: 8px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    border: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    margin: -3px 0;
+}
+.seek-bar:hover trough {
+    min-height: 3px;
+}
+.seek-bar:hover trough highlight {
+    min-height: 3px;
+}
+.seek-bar:hover slider {
+    min-width: 10px;
+    min-height: 10px;
+}
+
+/* ── Time label ── */
+.time-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.45);
+    font-variant-numeric: tabular-nums;
+    min-width: 36px;
+}
+
+/* ══════════════════════════
+   TRANSPORT — pure icon buttons
+   ══════════════════════════ */
+
+/* Skip prev/next — small circular icon buttons */
+.transport-btn {
+    color: rgba(255,255,255,0.7);
+    min-width: 24px;
+    min-height: 24px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    -gtk-icon-size: 14px;
+}
+.transport-btn:hover {
+    color: #ffffff;
+}
+
+/* Play/Pause — circular button */
+.play-btn {
+    background-color: rgba(255,255,255,0.1);
+    color: #ffffff;
+    min-width: 30px;
+    min-height: 30px;
+    padding: 0;
+    margin: 0 2px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 50%;
+    -gtk-icon-size: 16px;
+}
+.play-btn:hover {
+    background-color: rgba(255,255,255,0.18);
+}
+.play-btn:active {
+    background-color: rgba(255,255,255,0.25);
+}
+
+/* ── Control icons (mute, speed, fullscreen, open) ── */
+.ctrl-icon {
+    color: rgba(255,255,255,0.55);
+    min-width: 20px;
+    min-height: 20px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+}
+.ctrl-icon:hover {
+    color: #ffffff;
+}
+
+/* ── Speed label inside button ── */
+.speed-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+}
+
+/* ── Volume popover ── */
+.volume-popover contents {
+    background-color: rgba(28,28,34,0.95);
+    border-radius: 8px;
+    padding: 6px 2px;
+}
+
+.volume-slider-vertical trough {
+    min-width: 3px;
+    border-radius: 2px;
+    background-color: rgba(255,255,255,0.1);
+}
+.volume-slider-vertical trough highlight {
+    background-color: #6c5ce7;
+    border-radius: 2px;
+}
+.volume-slider-vertical slider {
+    min-width: 10px;
+    min-height: 10px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    border: none;
+    margin: 0 -3px;
+}
+
+/* ── Status ── */
+.status-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    margin-top: 2px;
+}
+
+/* ── Info label ── */
+.info-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    padding: 4px 8px 0 8px;
+}
+
+/* ── Header ── */
+headerbar {
+    background-color: rgba(22, 22, 26, 0.95);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    min-height: 36px;
+}
+
+/* ── Popover ── */
+popover contents {
+    background-color: rgba(28,28,34,0.95);
+    border-radius: 10px;
+    padding: 4px;
+}
+popover modelbutton {
+    color: #e0e0e0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+popover modelbutton:hover {
+    background-color: rgba(108,92,231,0.25);
+}
+
+/* ═══════════════════════════════
+   PLAYLIST PANEL — right slide
+   ═══════════════════════════════ */
+.playlist-panel {
+    background-color: rgba(22, 22, 28, 0.82);
+    border-left: 1px solid rgba(255,255,255,0.06);
+    padding: 0;
+    border-radius: 8px 0 0 8px;
+}
+
+.playlist-header {
+    padding: 12px 16px 8px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.playlist-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+}
+
+.playlist-list {
+    background: transparent;
+}
+
+.playlist-item {
+    padding: 6px 16px;
+    border-radius: 0;
+    background: transparent;
+}
+.playlist-item:hover {
+    background-color: rgba(255,255,255,0.05);
+}
+.playlist-item:selected {
+    background-color: rgba(108,92,231,0.2);
+}
+
+.playlist-item-label {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+}
+.playlist-item:selected .playlist-item-label {
+    color: #b8a9ff;
+    font-weight: 600;
+}
