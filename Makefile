@@ -7,7 +7,7 @@ ICONDIR = $(DATADIR)/icons/hicolor
 APP_NAME = vmedia-player
 APP_ID = io.vmedia.native-player
 
-.PHONY: build release install uninstall clean package
+.PHONY: build release install uninstall clean package package-deb
 
 build:
 	cargo build
@@ -61,3 +61,7 @@ package: release
 	cp LICENSE $(PKG_DIR)/
 	cd release-pkg && tar czf $(notdir $(PKG_DIR)).tar.gz $(notdir $(PKG_DIR))
 	@echo "Package created: $(PKG_DIR).tar.gz"
+
+package-deb: release
+	@echo "Creating Debian package..."
+	./scripts/build-deb.sh
