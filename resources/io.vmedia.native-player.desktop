@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=VMedia
+GenericName=Video Player
+Comment=A modern, lightweight, native video player built with Rust
+Exec=vmedia-player %F
+Icon=vmedia
+Terminal=false
+Type=Application
+Categories=AudioVideo;Video;Player;
+MimeType=video/mp4;video/x-matroska;video/webm;video/avi;video/x-msvideo;video/ogg;video/quicktime;video/x-flv;video/3gpp;audio/mpeg;audio/flac;audio/ogg;audio/mp4;audio/x-wav;
+Keywords=video;player;media;mpv;
+StartupWMClass=io.vmedia.native-player
