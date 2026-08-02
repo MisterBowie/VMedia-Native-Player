@@ -125,4 +125,3 @@ fn dirs_data_dir() -> PathBuf {
         PathBuf::from("/tmp")
     }
 }
-

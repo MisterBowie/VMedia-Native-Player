@@ -539,6 +539,224 @@ scrollbar slider:hover {
     background-color: rgba(232, 235, 241, 0.30);
 }
 
+/* ── IINA-style shortcut settings ─────────────────────────────── */
+
+window.shortcut-settings-window {
+    color: #25272b;
+    background-color: #f2f3f5;
+}
+
+headerbar.shortcut-settings-header {
+    min-height: 44px;
+    color: #303238;
+    background-color: #e8e9ec;
+    background-image: linear-gradient(to bottom, #f0f1f3, #e4e5e8);
+    border-bottom: 1px solid #cfd1d5;
+    box-shadow: none;
+}
+
+headerbar.shortcut-settings-header button {
+    min-width: 30px;
+    min-height: 30px;
+    color: #50535a;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-radius: 7px;
+    box-shadow: none;
+}
+
+headerbar.shortcut-settings-header button:hover {
+    color: #202226;
+    background-color: rgba(0, 0, 0, 0.055);
+}
+
+.shortcut-window-title {
+    color: #303238;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.shortcut-settings-root {
+    background-color: #f3f4f6;
+}
+
+.shortcut-sidebar {
+    padding: 18px 14px;
+    color: #3f4248;
+    background-color: #e4e5e8;
+    border-right: 1px solid #cfd1d5;
+}
+
+entry.shortcut-search {
+    min-height: 38px;
+    padding: 0 10px;
+    color: #2e3035;
+    background-color: rgba(255, 255, 255, 0.46);
+    background-image: none;
+    border: 1px solid rgba(74, 77, 84, 0.12);
+    border-radius: 10px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.035);
+}
+
+entry.shortcut-search:focus-within {
+    border-color: #4c91ee;
+    box-shadow: 0 0 0 2px rgba(52, 132, 228, 0.18);
+}
+
+button.shortcut-sidebar-item {
+    min-height: 48px;
+    padding: 0 14px;
+    color: #41444a;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-radius: 8px;
+    box-shadow: none;
+    font-size: 15px;
+    font-weight: 650;
+}
+
+button.shortcut-sidebar-item.selected,
+button.shortcut-sidebar-item.selected:hover,
+button.shortcut-sidebar-item.selected:active {
+    color: #ffffff;
+    background-color: #3988ef;
+    background-image: linear-gradient(to bottom, #4596f6, #3483eb);
+    box-shadow: 0 1px 2px rgba(32, 82, 150, 0.18);
+}
+
+.shortcut-content-scroll,
+.shortcut-content-scroll viewport,
+.shortcut-content-scroll undershoot {
+    background-color: #f3f4f6;
+    background-image: none;
+}
+
+.shortcut-settings-content {
+    color: #282a2f;
+}
+
+.shortcut-page-title {
+    color: #24262a;
+    font-size: 25px;
+    font-weight: 720;
+}
+
+.shortcut-page-description {
+    color: #777a81;
+    font-size: 13px;
+}
+
+.shortcut-section-title {
+    padding-top: 13px;
+    color: #2f3136;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+list.shortcut-settings-list {
+    color: #292b30;
+    background-color: rgba(255, 255, 255, 0.72);
+    background-image: none;
+    border: 1px solid #d7d9dd;
+    border-radius: 11px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.035);
+}
+
+list.shortcut-settings-list > row {
+    color: #292b30;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+}
+
+list.shortcut-settings-list > separator {
+    min-height: 1px;
+    margin: 0 16px;
+    background-color: #e0e1e4;
+}
+
+.shortcut-setting-row-content {
+    min-height: 50px;
+    padding: 0 18px;
+}
+
+.shortcut-action-label {
+    color: #2e3035;
+    font-size: 14px;
+    font-weight: 540;
+}
+
+button.shortcut-binding-button {
+    min-width: 76px;
+    min-height: 30px;
+    padding: 0 11px;
+    color: #34373c;
+    background-color: #f7f8fa;
+    background-image: linear-gradient(to bottom, #ffffff, #f1f2f4);
+    border: 1px solid #c9ccd1;
+    border-radius: 6px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.045);
+}
+
+button.shortcut-binding-button:hover {
+    color: #1f69c5;
+    border-color: #6fa6e9;
+    background-color: #ffffff;
+    background-image: linear-gradient(to bottom, #ffffff, #f5f8fc);
+    box-shadow: 0 0 0 2px rgba(52, 132, 228, 0.10);
+}
+
+button.shortcut-binding-button:active {
+    color: #ffffff;
+    background-color: #3b88ec;
+    background-image: none;
+    border-color: #3279d4;
+    box-shadow: inset 0 1px 2px rgba(20, 74, 142, 0.16);
+}
+
+.shortcut-binding-label {
+    min-width: 42px;
+    color: inherit;
+    font-size: 12px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.shortcut-settings-hint {
+    color: #8b8e95;
+    font-size: 12px;
+}
+
+button.shortcut-reset-button {
+    min-height: 30px;
+    padding: 0 12px;
+    color: #45484e;
+    background-color: #ffffff;
+    background-image: linear-gradient(to bottom, #ffffff, #f3f3f4);
+    border: 1px solid #c8cacf;
+    border-radius: 6px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.045);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+}
+
+button.shortcut-reset-button:hover {
+    border-color: #aeb1b7;
+    background-color: #ffffff;
+}
+
+.shortcut-capture-status {
+    margin-top: 6px;
+    color: #6f7279;
+}
+
+.shortcut-capture-status.error {
+    color: #c43b3b;
+}
+
 /* ── Focus and tooltips ─────────────────────────────────────────── */
 
 button:focus-visible,

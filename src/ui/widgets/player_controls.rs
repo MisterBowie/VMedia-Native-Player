@@ -97,7 +97,7 @@ impl PlayerControls {
         let backward_button = gtk::Button::builder()
             .child(&backward_icon)
             .css_classes(["flat", "transport-btn"])
-            .tooltip_text("快退 10 秒")
+            .tooltip_text("快退 5 秒")
             .build();
 
         let pp_icon = gtk::Image::from_icon_name("media-playback-start-symbolic");
@@ -114,7 +114,7 @@ impl PlayerControls {
         let forward_button = gtk::Button::builder()
             .child(&forward_icon)
             .css_classes(["flat", "transport-btn"])
-            .tooltip_text("快进 10 秒")
+            .tooltip_text("快进 5 秒")
             .build();
 
         // ── Volume: icon button + vertical popover slider ──

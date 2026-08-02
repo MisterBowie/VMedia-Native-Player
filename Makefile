@@ -23,6 +23,10 @@ install: release
 	install -Dm644 resources/icons/hicolor/128x128/apps/vmedia.png $(DESTDIR)$(ICONDIR)/128x128/apps/vmedia.png
 	install -Dm644 resources/icons/hicolor/64x64/apps/vmedia.png $(DESTDIR)$(ICONDIR)/64x64/apps/vmedia.png
 	install -Dm644 resources/icons/hicolor/48x48/apps/vmedia.png $(DESTDIR)$(ICONDIR)/48x48/apps/vmedia.png
+	install -Dm644 resources/icons/hicolor/256x256/apps/vmedia.png $(DESTDIR)$(ICONDIR)/256x256/apps/$(APP_ID).png
+	install -Dm644 resources/icons/hicolor/128x128/apps/vmedia.png $(DESTDIR)$(ICONDIR)/128x128/apps/$(APP_ID).png
+	install -Dm644 resources/icons/hicolor/64x64/apps/vmedia.png $(DESTDIR)$(ICONDIR)/64x64/apps/$(APP_ID).png
+	install -Dm644 resources/icons/hicolor/48x48/apps/vmedia.png $(DESTDIR)$(ICONDIR)/48x48/apps/$(APP_ID).png
 	-gtk-update-icon-cache -f -t $(DESTDIR)$(ICONDIR) 2>/dev/null || true
 	-update-desktop-database $(DESTDIR)$(APPDIR) 2>/dev/null || true
 	@echo "Installed successfully! Run '$(APP_NAME)' to start."
@@ -35,6 +39,10 @@ uninstall:
 	rm -f $(DESTDIR)$(ICONDIR)/128x128/apps/vmedia.png
 	rm -f $(DESTDIR)$(ICONDIR)/64x64/apps/vmedia.png
 	rm -f $(DESTDIR)$(ICONDIR)/48x48/apps/vmedia.png
+	rm -f $(DESTDIR)$(ICONDIR)/256x256/apps/$(APP_ID).png
+	rm -f $(DESTDIR)$(ICONDIR)/128x128/apps/$(APP_ID).png
+	rm -f $(DESTDIR)$(ICONDIR)/64x64/apps/$(APP_ID).png
+	rm -f $(DESTDIR)$(ICONDIR)/48x48/apps/$(APP_ID).png
 	-gtk-update-icon-cache -f -t $(DESTDIR)$(ICONDIR) 2>/dev/null || true
 	-update-desktop-database $(DESTDIR)$(APPDIR) 2>/dev/null || true
 	@echo "Uninstalled."
@@ -56,6 +64,10 @@ package: release
 	cp resources/icons/hicolor/128x128/apps/vmedia.png $(PKG_DIR)/icons/hicolor/128x128/apps/
 	cp resources/icons/hicolor/64x64/apps/vmedia.png $(PKG_DIR)/icons/hicolor/64x64/apps/
 	cp resources/icons/hicolor/48x48/apps/vmedia.png $(PKG_DIR)/icons/hicolor/48x48/apps/
+	cp resources/icons/hicolor/256x256/apps/vmedia.png $(PKG_DIR)/icons/hicolor/256x256/apps/$(APP_ID).png
+	cp resources/icons/hicolor/128x128/apps/vmedia.png $(PKG_DIR)/icons/hicolor/128x128/apps/$(APP_ID).png
+	cp resources/icons/hicolor/64x64/apps/vmedia.png $(PKG_DIR)/icons/hicolor/64x64/apps/$(APP_ID).png
+	cp resources/icons/hicolor/48x48/apps/vmedia.png $(PKG_DIR)/icons/hicolor/48x48/apps/$(APP_ID).png
 	cp README.md $(PKG_DIR)/
 	cp README_ZH.md $(PKG_DIR)/
 	cp LICENSE $(PKG_DIR)/

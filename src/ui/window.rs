@@ -1,11 +1,17 @@
-use std::{cell::Cell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 
 use adw::prelude::*;
 use gtk::{gdk, gio, glib};
 
 use crate::{
     core::{command::AppCommand, state::AppState},
-    infra::config::AppConfig,
+    infra::{
+        config::AppConfig,
+        shortcut_settings::{ShortcutAction, ShortcutSettings},
+    },
     player::libmpv::LibMpv,
 };
 
@@ -41,6 +47,12 @@ impl AppWindow {
         header_bar.add_css_class("app-header");
         header_bar.set_title_widget(Some(&title_label));
 
+        let shortcut_settings_button = gtk::Button::builder()
+            .icon_name("preferences-system-symbolic")
+            .tooltip_text("快捷键设置")
+            .build();
+        header_bar.pack_end(&shortcut_settings_button);
+
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header_bar);
         toolbar_view.set_content(Some(player_view.widget()));
@@ -55,6 +67,7 @@ impl AppWindow {
         window.set_icon_name(Some("vmedia"));
         window.add_css_class("vmedia-window");
 
+        let shortcut_settings = Rc::new(RefCell::new(ShortcutSettings::load()));
         let controls = player_view.controls();
         connect_open_button(&window, controls, on_command.clone());
         connect_empty_open_button(&player_view, controls);
@@ -62,9 +75,26 @@ impl AppWindow {
         connect_seek_bar(controls, on_command.clone());
         connect_speed_button(controls, on_command.clone());
         connect_mute_button(controls, on_command.clone());
-        connect_right_click_menu(&window, &player_view, on_command.clone());
+        connect_shortcut_settings_button(
+            &window,
+            &shortcut_settings_button,
+            shortcut_settings.clone(),
+        );
+        connect_shortcut_settings_action(app, &shortcut_settings_button);
+        connect_right_click_menu(
+            &window,
+            &player_view,
+            &shortcut_settings_button,
+            on_command.clone(),
+        );
         connect_video_click(&player_view, &window, on_command.clone());
-        connect_keyboard_shortcuts(&window, controls, on_command.clone());
+        connect_keyboard_shortcuts(
+            &window,
+            controls,
+            &shortcut_settings_button,
+            shortcut_settings,
+            on_command.clone(),
+        );
 
         // Playlist toggle button
         let panel = player_view.playlist_panel.clone();
@@ -195,12 +225,12 @@ fn connect_transport_buttons(
     let cmd = on_command.clone();
     controls
         .backward_button
-        .connect_clicked(move |_| cmd(AppCommand::SeekRelative(-10.0)));
+        .connect_clicked(move |_| cmd(AppCommand::SeekRelative(-5.0)));
 
     let cmd = on_command.clone();
     controls
         .forward_button
-        .connect_clicked(move |_| cmd(AppCommand::SeekRelative(10.0)));
+        .connect_clicked(move |_| cmd(AppCommand::SeekRelative(5.0)));
 
     let w = window.clone();
     let cmd = on_command.clone();
@@ -279,9 +309,409 @@ fn connect_mute_button(controls: &super::widgets::PlayerControls, on_command: Co
         .connect_clicked(move |_| on_command(AppCommand::ToggleMute));
 }
 
+fn connect_shortcut_settings_button(
+    window: &adw::ApplicationWindow,
+    button: &gtk::Button,
+    settings: Rc<RefCell<ShortcutSettings>>,
+) {
+    let window = window.clone();
+    button.connect_clicked(move |_| {
+        show_shortcut_preferences(&window, settings.clone());
+    });
+}
+
+fn connect_shortcut_settings_action(app: &adw::Application, button: &gtk::Button) {
+    let button = button.clone();
+    let action = gio::SimpleAction::new("shortcut-settings", None);
+    action.connect_activate(move |_, _| button.emit_clicked());
+    app.add_action(&action);
+}
+
+fn show_shortcut_preferences(
+    parent: &adw::ApplicationWindow,
+    settings: Rc<RefCell<ShortcutSettings>>,
+) {
+    let application = parent.application().expect("application window");
+    let preferences = adw::Window::builder()
+        .application(&application)
+        .title("设置")
+        .default_width(1040)
+        .default_height(760)
+        .transient_for(parent)
+        .modal(true)
+        .build();
+    preferences.add_css_class("shortcut-settings-window");
+
+    let header_bar = adw::HeaderBar::new();
+    header_bar.add_css_class("shortcut-settings-header");
+    header_bar.set_title_widget(Some(
+        &gtk::Label::builder()
+            .label("设置")
+            .css_classes(["shortcut-window-title"])
+            .build(),
+    ));
+
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header_bar);
+
+    let root = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    root.add_css_class("shortcut-settings-root");
+
+    let sidebar = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .spacing(16)
+        .css_classes(["shortcut-sidebar"])
+        .build();
+    sidebar.set_size_request(250, -1);
+
+    let search_entry = gtk::SearchEntry::builder()
+        .placeholder_text("搜索")
+        .css_classes(["shortcut-search"])
+        .build();
+    sidebar.append(&search_entry);
+
+    let sidebar_item_content = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(12)
+        .build();
+    let sidebar_icon = gtk::Image::from_icon_name("input-keyboard-symbolic");
+    sidebar_icon.set_pixel_size(19);
+    let sidebar_label = gtk::Label::builder()
+        .label("快捷键")
+        .xalign(0.0)
+        .hexpand(true)
+        .build();
+    sidebar_item_content.append(&sidebar_icon);
+    sidebar_item_content.append(&sidebar_label);
+
+    let sidebar_item = gtk::Button::builder()
+        .child(&sidebar_item_content)
+        .css_classes(["shortcut-sidebar-item", "selected"])
+        .build();
+    let search_for_sidebar = search_entry.clone();
+    sidebar_item.connect_clicked(move |_| {
+        search_for_sidebar.grab_focus();
+    });
+    sidebar.append(&sidebar_item);
+    root.append(&sidebar);
+
+    let content = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .spacing(12)
+        .css_classes(["shortcut-settings-content"])
+        .build();
+    content.set_margin_top(38);
+    content.set_margin_bottom(38);
+    content.set_margin_start(46);
+    content.set_margin_end(46);
+
+    let title = gtk::Label::builder()
+        .label("快捷键")
+        .xalign(0.0)
+        .css_classes(["shortcut-page-title"])
+        .build();
+    let description = gtk::Label::builder()
+        .label("点击快捷键按钮，然后按下新的按键组合。修改后立即生效。")
+        .xalign(0.0)
+        .wrap(true)
+        .css_classes(["shortcut-page-description"])
+        .build();
+    content.append(&title);
+    content.append(&description);
+
+    let section = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(28)
+        .css_classes(["shortcut-section"])
+        .build();
+    section.set_margin_top(24);
+
+    let section_title = gtk::Label::builder()
+        .label("播放器：")
+        .xalign(0.0)
+        .yalign(0.0)
+        .css_classes(["shortcut-section-title"])
+        .build();
+    section_title.set_size_request(112, -1);
+    section.append(&section_title);
+
+    let shortcut_column = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .spacing(18)
+        .hexpand(true)
+        .build();
+
+    let shortcut_list = gtk::ListBox::new();
+    shortcut_list.set_selection_mode(gtk::SelectionMode::None);
+    shortcut_list.set_show_separators(true);
+    shortcut_list.add_css_class("shortcut-settings-list");
+
+    let mut shortcut_labels = Vec::new();
+    let mut searchable_rows = Vec::new();
+    for action in ShortcutAction::ALL {
+        let accelerator = settings
+            .borrow()
+            .binding(action)
+            .unwrap_or_default()
+            .to_string();
+        let shortcut_label = gtk::Label::builder()
+            .label(shortcut_display_text(Some(&accelerator)))
+            .halign(gtk::Align::Center)
+            .css_classes(["shortcut-binding-label"])
+            .build();
+
+        let binding_button = gtk::Button::builder()
+            .child(&shortcut_label)
+            .halign(gtk::Align::End)
+            .valign(gtk::Align::Center)
+            .tooltip_text("点击修改快捷键")
+            .css_classes(["shortcut-binding-button"])
+            .build();
+
+        let action_label = gtk::Label::builder()
+            .label(action.label())
+            .xalign(0.0)
+            .hexpand(true)
+            .css_classes(["shortcut-action-label"])
+            .build();
+
+        let row_content = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .spacing(20)
+            .css_classes(["shortcut-setting-row-content"])
+            .build();
+        row_content.append(&action_label);
+        row_content.append(&binding_button);
+
+        let row = gtk::ListBoxRow::builder()
+            .child(&row_content)
+            .activatable(false)
+            .selectable(false)
+            .css_classes(["shortcut-setting-row"])
+            .build();
+
+        let preferences = preferences.clone();
+        let label_for_capture = shortcut_label.clone();
+        let settings_for_capture = settings.clone();
+        binding_button.connect_clicked(move |_| {
+            show_shortcut_capture_dialog(
+                &preferences,
+                action,
+                &label_for_capture,
+                settings_for_capture.clone(),
+            );
+        });
+        shortcut_list.append(&row);
+
+        shortcut_labels.push((action, shortcut_label));
+        searchable_rows.push((action.label().to_lowercase(), row));
+    }
+
+    let shortcut_labels = Rc::new(shortcut_labels);
+    let searchable_rows = Rc::new(searchable_rows);
+
+    let rows_for_search = searchable_rows;
+    search_entry.connect_search_changed(move |entry| {
+        let query = entry.text().trim().to_lowercase();
+        for (label, row) in rows_for_search.iter() {
+            row.set_visible(query.is_empty() || label.contains(&query));
+        }
+    });
+
+    let hint_label = gtk::Label::builder()
+        .label("Esc 始终用于退出全屏；在录入窗口中按 Backspace 可清除绑定。")
+        .xalign(0.0)
+        .wrap(true)
+        .css_classes(["shortcut-settings-hint"])
+        .build();
+
+    let reset_button = gtk::Button::builder()
+        .label("恢复默认")
+        .halign(gtk::Align::End)
+        .css_classes(["shortcut-reset-button"])
+        .tooltip_text("恢复全部默认快捷键")
+        .build();
+
+    let labels_for_reset = shortcut_labels;
+    let settings_for_reset = settings;
+    reset_button.connect_clicked(move |_| {
+        settings_for_reset.borrow_mut().reset();
+        persist_shortcut_settings(&settings_for_reset);
+
+        let current_settings = settings_for_reset.borrow();
+        for (action, label) in labels_for_reset.iter() {
+            label.set_text(&shortcut_display_text(current_settings.binding(*action)));
+        }
+    });
+
+    shortcut_column.append(&shortcut_list);
+    shortcut_column.append(&hint_label);
+    shortcut_column.append(&reset_button);
+    section.append(&shortcut_column);
+    content.append(&section);
+
+    let content_scroll = gtk::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk::PolicyType::Never)
+        .vscrollbar_policy(gtk::PolicyType::Automatic)
+        .hexpand(true)
+        .vexpand(true)
+        .child(&content)
+        .css_classes(["shortcut-content-scroll"])
+        .build();
+    root.append(&content_scroll);
+
+    toolbar_view.set_content(Some(&root));
+    preferences.set_content(Some(&toolbar_view));
+    preferences.present();
+}
+
+#[allow(deprecated)]
+fn show_shortcut_capture_dialog(
+    parent: &adw::Window,
+    action: ShortcutAction,
+    shortcut_label: &gtk::Label,
+    settings: Rc<RefCell<ShortcutSettings>>,
+) {
+    let heading = format!("设置“{}”快捷键", action.label());
+    let dialog = adw::MessageDialog::new(
+        Some(parent),
+        Some(&heading),
+        Some("按下新的按键组合。按 Esc 取消，按 Backspace 清除当前快捷键。"),
+    );
+    dialog.add_response("cancel", "取消");
+    dialog.set_close_response("cancel");
+
+    let status_label = gtk::Label::builder()
+        .label("等待输入…")
+        .wrap(true)
+        .css_classes(["shortcut-capture-status"])
+        .build();
+    dialog.set_extra_child(Some(&status_label));
+
+    let controller = gtk::EventControllerKey::new();
+    controller.set_propagation_phase(gtk::PropagationPhase::Capture);
+    let dialog_for_key = dialog.clone();
+    let label_for_key = shortcut_label.clone();
+    controller.connect_key_pressed(move |_, key, _, modifier| {
+        if key == gdk::Key::Escape {
+            dialog_for_key.close();
+            return glib::Propagation::Stop;
+        }
+
+        if key == gdk::Key::BackSpace {
+            settings.borrow_mut().set_binding(action, None);
+            persist_shortcut_settings(&settings);
+            label_for_key.set_text("未设置");
+            dialog_for_key.close();
+            return glib::Propagation::Stop;
+        }
+
+        if is_modifier_key(key) {
+            status_label.set_text("请继续按下一个非修饰键");
+            status_label.remove_css_class("error");
+            return glib::Propagation::Stop;
+        }
+
+        let modifiers = normalized_shortcut_modifiers(modifier);
+        let accelerator = gtk::accelerator_name(key, modifiers).to_string();
+        let conflict = {
+            let current_settings = settings.borrow();
+            ShortcutAction::ALL.into_iter().find(|candidate| {
+                *candidate != action
+                    && current_settings
+                        .binding(*candidate)
+                        .is_some_and(|binding| accelerators_equal(binding, &accelerator))
+            })
+        };
+
+        if let Some(conflict) = conflict {
+            status_label.set_text(&format!(
+                "该快捷键已被“{}”使用，请选择其他按键。",
+                conflict.label()
+            ));
+            status_label.add_css_class("error");
+            return glib::Propagation::Stop;
+        }
+
+        settings
+            .borrow_mut()
+            .set_binding(action, Some(accelerator.clone()));
+        persist_shortcut_settings(&settings);
+        label_for_key.set_text(&shortcut_display_text(Some(&accelerator)));
+        dialog_for_key.close();
+        glib::Propagation::Stop
+    });
+    dialog.add_controller(controller);
+    dialog.present();
+}
+
+fn shortcut_display_text(accelerator: Option<&str>) -> String {
+    accelerator
+        .and_then(gtk::accelerator_parse)
+        .map(|(key, modifiers)| gtk::accelerator_get_label(key, modifiers).to_string())
+        .filter(|label| !label.is_empty())
+        .unwrap_or_else(|| "未设置".to_string())
+}
+
+fn persist_shortcut_settings(settings: &Rc<RefCell<ShortcutSettings>>) {
+    if let Err(error) = settings.borrow().save() {
+        tracing::warn!(%error, "failed to save shortcut settings");
+    }
+}
+
+fn normalized_shortcut_modifiers(modifiers: gdk::ModifierType) -> gdk::ModifierType {
+    modifiers & gtk::accelerator_get_default_mod_mask()
+}
+
+fn accelerators_equal(left: &str, right: &str) -> bool {
+    let Some((left_key, left_modifiers)) = gtk::accelerator_parse(left) else {
+        return false;
+    };
+    let Some((right_key, right_modifiers)) = gtk::accelerator_parse(right) else {
+        return false;
+    };
+
+    left_key.to_lower() == right_key.to_lower()
+        && normalized_shortcut_modifiers(left_modifiers)
+            == normalized_shortcut_modifiers(right_modifiers)
+}
+
+fn accelerator_matches_event(
+    accelerator: &str,
+    key: gdk::Key,
+    modifiers: gdk::ModifierType,
+) -> bool {
+    let Some((shortcut_key, shortcut_modifiers)) = gtk::accelerator_parse(accelerator) else {
+        return false;
+    };
+
+    shortcut_key.to_lower() == key.to_lower()
+        && normalized_shortcut_modifiers(shortcut_modifiers) == modifiers
+}
+
+fn is_modifier_key(key: gdk::Key) -> bool {
+    matches!(
+        key,
+        gdk::Key::Shift_L
+            | gdk::Key::Shift_R
+            | gdk::Key::Control_L
+            | gdk::Key::Control_R
+            | gdk::Key::Alt_L
+            | gdk::Key::Alt_R
+            | gdk::Key::Super_L
+            | gdk::Key::Super_R
+            | gdk::Key::Meta_L
+            | gdk::Key::Meta_R
+            | gdk::Key::ISO_Level3_Shift
+            | gdk::Key::Caps_Lock
+            | gdk::Key::Num_Lock
+    )
+}
+
 fn connect_right_click_menu(
     window: &adw::ApplicationWindow,
     player_view: &PlayerView,
+    shortcut_settings_button: &gtk::Button,
     on_command: CommandHandler,
 ) {
     let group = gio::SimpleActionGroup::new();
@@ -299,6 +729,11 @@ fn connect_right_click_menu(
     let cmd = on_command.clone();
     let a = gio::SimpleAction::new("stop", None);
     a.connect_activate(move |_, _| cmd(AppCommand::Stop));
+    group.add_action(&a);
+
+    let settings_button = shortcut_settings_button.clone();
+    let a = gio::SimpleAction::new("shortcut-settings", None);
+    a.connect_activate(move |_, _| settings_button.emit_clicked());
     group.add_action(&a);
 
     for speed in [0.5, 0.75, 1.0, 1.25, 1.5, 2.0] {
@@ -322,6 +757,7 @@ fn connect_right_click_menu(
     menu.append_submenu(Some("倍速播放"), &speed_sub);
     menu.append(Some("截图"), Some("player.screenshot"));
     menu.append(Some("停止播放"), Some("player.stop"));
+    menu.append(Some("快捷键设置"), Some("player.shortcut-settings"));
 
     let popover = gtk::PopoverMenu::from_model(Some(&menu));
     popover.set_parent(player_view.widget());
@@ -372,10 +808,15 @@ fn connect_video_click(
 fn connect_keyboard_shortcuts(
     window: &adw::ApplicationWindow,
     controls: &super::widgets::PlayerControls,
+    shortcut_settings_button: &gtk::Button,
+    shortcut_settings: Rc<RefCell<ShortcutSettings>>,
     on_command: CommandHandler,
 ) {
     let w = window.clone();
     let vol = controls.volume_scale.clone();
+    let open_button = controls.open_button.clone();
+    let playlist_button = controls.playlist_button.clone();
+    let settings_button = shortcut_settings_button.clone();
     let ctrl = gtk::EventControllerKey::new();
     ctrl.set_propagation_phase(gtk::PropagationPhase::Capture);
 
@@ -390,76 +831,87 @@ fn connect_keyboard_shortcuts(
             }
         }
 
-        // Only handle unmodified keys (no Ctrl/Alt combos)
-        if modifier.contains(gdk::ModifierType::CONTROL_MASK)
-            || modifier.contains(gdk::ModifierType::ALT_MASK)
-        {
-            return glib::Propagation::Proceed;
+        // Escape is always available as an emergency way to leave fullscreen.
+        if key == gdk::Key::Escape && w.is_fullscreen() {
+            on_command(AppCommand::SetFullscreen(false));
+            return glib::Propagation::Stop;
         }
 
-        match key {
-            gdk::Key::space => {
+        let modifiers = normalized_shortcut_modifiers(modifier);
+        let action = {
+            let settings = shortcut_settings.borrow();
+            ShortcutAction::ALL.into_iter().find(|action| {
+                settings.binding(*action).is_some_and(|accelerator| {
+                    accelerator_matches_event(accelerator, key, modifiers)
+                })
+            })
+        };
+
+        match action {
+            Some(ShortcutAction::TogglePause) => {
                 on_command(AppCommand::TogglePause);
                 glib::Propagation::Stop
             }
-            gdk::Key::Left => {
-                on_command(AppCommand::SeekRelative(-10.0));
+            Some(ShortcutAction::SeekBackward) => {
+                on_command(AppCommand::SeekRelative(-5.0));
                 glib::Propagation::Stop
             }
-            gdk::Key::Right => {
-                on_command(AppCommand::SeekRelative(10.0));
+            Some(ShortcutAction::SeekForward) => {
+                on_command(AppCommand::SeekRelative(5.0));
                 glib::Propagation::Stop
             }
-            gdk::Key::Up => {
+            Some(ShortcutAction::VolumeUp) => {
                 let v = (vol.value() + 5.0).clamp(0.0, 100.0);
                 vol.set_value(v);
                 on_command(AppCommand::SetVolume(v));
                 glib::Propagation::Stop
             }
-            gdk::Key::Down => {
+            Some(ShortcutAction::VolumeDown) => {
                 let v = (vol.value() - 5.0).clamp(0.0, 100.0);
                 vol.set_value(v);
                 on_command(AppCommand::SetVolume(v));
                 glib::Propagation::Stop
             }
-            gdk::Key::f | gdk::Key::F => {
+            Some(ShortcutAction::ToggleFullscreen) => {
                 on_command(AppCommand::SetFullscreen(!w.is_fullscreen()));
                 glib::Propagation::Stop
             }
-            gdk::Key::Escape => {
-                if w.is_fullscreen() {
-                    on_command(AppCommand::SetFullscreen(false));
-                    glib::Propagation::Stop
-                } else {
-                    glib::Propagation::Proceed
-                }
-            }
-            gdk::Key::s | gdk::Key::S => {
+            Some(ShortcutAction::Screenshot) => {
                 on_command(AppCommand::Screenshot);
                 glib::Propagation::Stop
             }
-            gdk::Key::m | gdk::Key::M => {
+            Some(ShortcutAction::ToggleMute) => {
                 on_command(AppCommand::ToggleMute);
                 glib::Propagation::Stop
             }
-            gdk::Key::q | gdk::Key::Q => {
+            Some(ShortcutAction::Stop) => {
                 on_command(AppCommand::Stop);
                 glib::Propagation::Stop
             }
-            // [ = speed down 0.25
-            gdk::Key::bracketleft => {
+            Some(ShortcutAction::SpeedDown) => {
                 let cur = current_speed.get();
                 let new_speed = (cur - 0.25_f64).max(0.25);
                 current_speed.set(new_speed);
                 on_command(AppCommand::SetSpeed(new_speed));
                 glib::Propagation::Stop
             }
-            // ] = speed up 0.25
-            gdk::Key::bracketright => {
+            Some(ShortcutAction::SpeedUp) => {
                 let cur = current_speed.get();
                 let new_speed = (cur + 0.25_f64).min(4.0);
                 current_speed.set(new_speed);
                 on_command(AppCommand::SetSpeed(new_speed));
+                glib::Propagation::Stop
+            }
+            Some(ShortcutAction::OpenFile) => {
+                open_button.emit_clicked();
+                glib::Propagation::Stop
+            }
+            Some(ShortcutAction::TogglePlaylist) => {
+                playlist_button.emit_clicked();
+                glib::Propagation::Stop
+            }
+            Some(ShortcutAction::OpenSettings) => {
+                settings_button.emit_clicked();
                 glib::Propagation::Stop
             }
             _ => glib::Propagation::Proceed,
@@ -629,7 +1081,6 @@ fn connect_controls_drag(player_view: &PlayerView) {
         let wrapper = wrapper.clone();
         let overlay = overlay.clone();
         let is_dc = is_dragging_controls.clone();
-        let start = drag_start_pos.clone();
         let margins = initial_margins.clone();
         drag.connect_drag_update(move |_, dx, dy| {
             if !is_dc.get() {

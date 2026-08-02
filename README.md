@@ -13,7 +13,7 @@
 
 ---
 
-<img src="docs/screenshots/preview.png" alt="VMedia Preview" width="720" />
+<img src="docs/screenshots/shortcut-settings.png" alt="VMedia Shortcut Settings" width="820" />
 
 </div>
 
@@ -36,6 +36,12 @@ VMedia is a native Linux video player that combines the decoding power of **libm
 - **Draggable** — Drag the control bar anywhere on the screen
 - **Responsive width** — Scales to 60% of window width, capped at 600px max
 - **Circular play button** — Minimalist design with smooth hover effects
+
+### ⌨️ Shortcut Settings
+- **Visual editor** — Dedicated IINA-inspired shortcut settings window
+- **Instant updates** — Click a binding and press a new key or key combination
+- **Conflict detection** — Prevents duplicate bindings; supports clearing and resetting
+- **Persistent bindings** — Custom shortcuts remain active after restarting the player
 
 ### 🔊 Audio
 - **Volume control** — Vertical popup slider on hover over volume icon
@@ -74,6 +80,7 @@ native-player/src/
 │   ├── db.rs                  # Database (future use)
 │   ├── logging.rs             # Tracing setup
 │   ├── playback_history.rs    # JSON-based position & last-file persistence
+│   ├── shortcut_settings.rs   # Shortcut bindings and persistence
 │   └── xdg.rs                 # XDG directory paths
 └── ui/
     ├── style.css              # Complete UI theme (glassmorphism, dark mode)
@@ -143,12 +150,15 @@ Or use the **folder icon** in the control panel to open a file dialog.
 |---|---|
 | `Space` | Play / Pause |
 | `←` / `→` | Seek ±5 seconds |
-| `Shift+←` / `Shift+→` | Seek ±30 seconds |
 | `↑` / `↓` | Volume ±5% |
 | `M` | Toggle mute |
-| `F` / `F11` | Toggle fullscreen |
-| `O` | Open file |
-| `L` | Toggle playlist |
+| `F` | Toggle fullscreen |
+| `S` | Take a screenshot |
+| `Q` | Stop playback |
+| `[` / `]` | Decrease/increase playback speed |
+| `Ctrl+O` | Open file |
+| `P` | Toggle playlist |
+| `Ctrl+,` | Open shortcut settings |
 | `Esc` | Exit fullscreen |
 
 ## 📁 Data Storage
@@ -178,9 +188,10 @@ Example:
 - [ ] Subtitle management (external file loading, delay adjustment)
 - [ ] Audio track switching
 - [ ] A-B loop
-- [ ] Screenshot capture
+- [x] Screenshot capture
 - [ ] Media library with poster thumbnails
-- [ ] Settings panel (keybindings, theme)
+- [x] Shortcut settings panel with persistent custom bindings
+- [ ] Theme settings
 
 ## 📄 License
 
