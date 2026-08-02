@@ -24,6 +24,7 @@ pub fn run() -> gtk::glib::ExitCode {
         .build();
 
     app.connect_startup(|_| {
+        configure_app_icon();
         load_custom_css();
     });
 
@@ -43,6 +44,28 @@ pub fn run() -> gtk::glib::ExitCode {
     });
 
     app.run()
+}
+
+fn configure_app_icon() {
+    const ICON_NAME: &str = "vmedia";
+
+    let display = gdk::Display::default().expect("Could not get default display");
+    let icon_theme = gtk::IconTheme::for_display(&display);
+
+    // Make the icon available when running directly from the source tree.
+    icon_theme.add_search_path(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/icons"));
+
+    // The portable archive keeps its icon theme next to the executable.
+    if let Ok(executable) = std::env::current_exe()
+        && let Some(executable_dir) = executable.parent()
+    {
+        let portable_icons = executable_dir.join("icons");
+        if portable_icons.is_dir() {
+            icon_theme.add_search_path(portable_icons);
+        }
+    }
+
+    gtk::Window::set_default_icon_name(ICON_NAME);
 }
 
 fn load_custom_css() {

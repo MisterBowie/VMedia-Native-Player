@@ -52,6 +52,7 @@ impl AppWindow {
             .default_height(config.default_height)
             .content(&toolbar_view)
             .build();
+        window.set_icon_name(Some("vmedia"));
         window.add_css_class("vmedia-window");
 
         let controls = player_view.controls();
