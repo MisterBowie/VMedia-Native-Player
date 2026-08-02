@@ -57,9 +57,9 @@ fn load_custom_css() {
 }
 
 fn build_ui(app: &adw::Application) {
-    // Force dark color scheme
+    // Keep native dialogs and system controls aligned with the white glass theme.
     let style_manager = adw::StyleManager::default();
-    style_manager.set_color_scheme(adw::ColorScheme::ForceDark);
+    style_manager.set_color_scheme(adw::ColorScheme::ForceLight);
 
     let _database = Database::new();
     let history = Rc::new(RefCell::new(PlaybackHistory::load()));
@@ -98,7 +98,9 @@ fn build_ui(app: &adw::Application) {
     let history_for_handler = history.clone();
     let state_for_handler = state.clone();
     let command_handler: Rc<dyn Fn(AppCommand)> = Rc::new(move |command| {
-        info!(?command, "handling command");
+        if !matches!(&command, AppCommand::SeekPreview(_)) {
+            info!(?command, "handling command");
+        }
 
         // Before opening a new file, save current playback position
         if let AppCommand::OpenFile(ref new_path) = command {

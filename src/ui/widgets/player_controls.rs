@@ -46,6 +46,7 @@ pub struct PlayerControls {
     pub mute_button: gtk::Button,
     pub playlist_button: gtk::Button,
     volume_syncing: Rc<Cell<bool>>,
+    duration_seconds: Rc<Cell<f64>>,
     seek_bar: SeekBar,
     time_label: gtk::Label,
     remaining_label: gtk::Label,
@@ -54,14 +55,13 @@ pub struct PlayerControls {
     pp_icon: gtk::Image,
     fs_icon: gtk::Image,
     mute_icon: gtk::Image,
-    volume_popover: gtk::Popover,
 }
 
 impl PlayerControls {
     pub fn new() -> Self {
         let root = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
-            .spacing(2)
+            .spacing(6)
             .css_classes(["control-bar"])
             .build();
 
@@ -83,6 +83,7 @@ impl PlayerControls {
         let seek_row = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .spacing(8)
+            .css_classes(["seek-row"])
             .build();
         seek_row.append(&time_label);
         seek_bar.widget().set_hexpand(true);
@@ -91,72 +92,46 @@ impl PlayerControls {
 
         // ── Row 2: left | transport | right controls ──
         // Transport: ⏮ ▶ ⏭ — pure icons
+        let backward_icon = gtk::Image::from_icon_name("media-seek-backward-symbolic");
+        backward_icon.set_pixel_size(27);
         let backward_button = gtk::Button::builder()
-            .icon_name("media-skip-backward-symbolic")
+            .child(&backward_icon)
             .css_classes(["flat", "transport-btn"])
+            .tooltip_text("快退 10 秒")
             .build();
 
         let pp_icon = gtk::Image::from_icon_name("media-playback-start-symbolic");
-        pp_icon.set_pixel_size(16);
+        pp_icon.set_pixel_size(27);
         let play_pause_button = gtk::Button::builder()
             .child(&pp_icon)
             .css_classes(["play-btn"])
+            .tooltip_text("播放 / 暂停")
             .build();
-        play_pause_button.set_size_request(30, 30);
+        play_pause_button.set_size_request(46, 46);
 
+        let forward_icon = gtk::Image::from_icon_name("media-seek-forward-symbolic");
+        forward_icon.set_pixel_size(27);
         let forward_button = gtk::Button::builder()
-            .icon_name("media-skip-forward-symbolic")
+            .child(&forward_icon)
             .css_classes(["flat", "transport-btn"])
+            .tooltip_text("快进 10 秒")
             .build();
 
         // ── Volume: icon button + vertical popover slider ──
         let mute_icon = gtk::Image::from_icon_name("audio-volume-high-symbolic");
-        mute_icon.set_pixel_size(14);
+        mute_icon.set_pixel_size(18);
 
-        // Vertical volume slider inside a popover
-        let volume_scale = gtk::Scale::with_range(gtk::Orientation::Vertical, 0.0, 100.0, 1.0);
+        // IINA-style inline horizontal volume control.
+        let volume_scale = gtk::Scale::with_range(gtk::Orientation::Horizontal, 0.0, 100.0, 1.0);
         volume_scale.set_draw_value(false);
-        volume_scale.set_inverted(true); // top = 100%, bottom = 0%
-        volume_scale.set_size_request(-1, 120);
+        volume_scale.set_size_request(112, -1);
         volume_scale.set_value(50.0);
-        volume_scale.add_css_class("volume-slider-vertical");
+        volume_scale.add_css_class("volume-slider");
 
-        let vol_box = gtk::Box::builder()
-            .orientation(gtk::Orientation::Vertical)
-            .spacing(2)
-            .margin_top(2)
-            .margin_bottom(2)
-            .margin_start(2)
-            .margin_end(2)
-            .build();
-        vol_box.append(&volume_scale);
-
-        let volume_popover = gtk::Popover::builder()
-            .child(&vol_box)
-            .position(gtk::PositionType::Top)
-            .has_arrow(true)
-            .autohide(true)
-            .css_classes(["volume-popover"])
-            .build();
-
-        // MenuButton to host the popover — force direction UP
-        let mute_button = gtk::MenuButton::builder()
+        let mute_button = gtk::Button::builder()
             .child(&mute_icon)
-            .popover(&volume_popover)
-            .direction(gtk::ArrowType::Up)
             .css_classes(["flat", "ctrl-icon"])
-            .build();
-
-        // Also support click-to-mute: long-press or right-click
-        // We'll use the MenuButton for popover, and add a separate mute button behavior
-        // Actually, let's just use the MenuButton for the popover volume.
-        // Mute will be via keyboard 'm' shortcut.
-
-        // We still need a gtk::Button for mute toggle — let's wrap it:
-        // Actually, MenuButton handles the popover. We'll keep a separate invisible
-        // Button for the mute command binding in window.rs.
-        let mute_toggle_button = gtk::Button::builder()
-            .visible(false)
+            .tooltip_text("静音")
             .build();
 
         let speed_label = gtk::Label::builder()
@@ -166,19 +141,22 @@ impl PlayerControls {
         let speed_button = gtk::Button::builder()
             .child(&speed_label)
             .css_classes(["flat", "ctrl-icon"])
+            .tooltip_text("播放速度")
             .build();
 
         let fs_icon = gtk::Image::from_icon_name("view-fullscreen-symbolic");
-        fs_icon.set_pixel_size(14);
+        fs_icon.set_pixel_size(17);
         let fullscreen_button = gtk::Button::builder()
             .child(&fs_icon)
             .css_classes(["flat", "ctrl-icon"])
+            .tooltip_text("全屏")
             .build();
 
         // Open file button — in left group
         let open_button = gtk::Button::builder()
             .icon_name("document-open-symbolic")
             .css_classes(["flat", "ctrl-icon"])
+            .tooltip_text("打开媒体文件")
             .build();
 
         // Playlist button
@@ -199,14 +177,17 @@ impl PlayerControls {
         // ── Layout Row 2 with CenterBox ──
         let left = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
-            .spacing(4)
+            .spacing(8)
+            .css_classes(["control-group", "left-controls"])
             .build();
-        left.append(&open_button);
+        left.append(&mute_button);
+        left.append(&volume_scale);
 
         let center = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .spacing(2)
             .halign(gtk::Align::Center)
+            .css_classes(["control-group", "transport-controls"])
             .build();
         center.append(&backward_button);
         center.append(&play_pause_button);
@@ -214,9 +195,10 @@ impl PlayerControls {
 
         let right = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
-            .spacing(4)
+            .spacing(6)
+            .css_classes(["control-group", "right-controls"])
             .build();
-        right.append(&mute_button);
+        right.append(&open_button);
         right.append(&speed_button);
         right.append(&playlist_button);
         right.append(&fullscreen_button);
@@ -225,9 +207,10 @@ impl PlayerControls {
         controls_row.set_start_widget(Some(&left));
         controls_row.set_center_widget(Some(&center));
         controls_row.set_end_widget(Some(&right));
+        controls_row.add_css_class("controls-row");
 
-        root.append(&seek_row);
         root.append(&controls_row);
+        root.append(&seek_row);
 
         Self {
             root,
@@ -238,9 +221,10 @@ impl PlayerControls {
             fullscreen_button,
             volume_scale,
             speed_button,
-            mute_button: mute_toggle_button,
+            mute_button,
             playlist_button,
             volume_syncing,
+            duration_seconds: Rc::new(Cell::new(0.0)),
             seek_bar,
             time_label,
             remaining_label,
@@ -249,7 +233,6 @@ impl PlayerControls {
             pp_icon,
             fs_icon,
             mute_icon,
-            volume_popover,
         }
     }
 
@@ -274,6 +257,14 @@ impl PlayerControls {
         });
     }
 
+    pub fn preview_seek_position(&self, position_seconds: f64) {
+        let duration_seconds = self.duration_seconds.get();
+        self.time_label.set_text(&format_time(position_seconds));
+        let remaining = duration_seconds - position_seconds;
+        self.remaining_label
+            .set_text(&format!("-{}", format_time(remaining)));
+    }
+
     pub fn render(&self, state: &AppState) {
         let has_media = state.playback.current_media.is_some();
 
@@ -292,13 +283,13 @@ impl PlayerControls {
             state.playback.duration_seconds,
         );
 
-        // Time (left) and remaining (right)
-        let cur = format_time(state.playback.position_seconds);
-        self.time_label.set_text(&cur);
-
-        let remaining = state.playback.duration_seconds - state.playback.position_seconds;
-        let rem = format_time(remaining);
-        self.remaining_label.set_text(&format!("-{rem}"));
+        self.duration_seconds
+            .set(state.playback.duration_seconds.max(0.0));
+        // While dragging, the pointer position owns the time preview so
+        // backend refreshes cannot overwrite it.
+        if !self.seek_bar.is_dragging() {
+            self.preview_seek_position(state.playback.position_seconds);
+        }
 
         // Speed
         self.speed_label
@@ -317,13 +308,9 @@ impl PlayerControls {
 
         // Fullscreen
         if state.playback.is_fullscreen {
-            self.fs_icon
-                .set_icon_name(Some("view-restore-symbolic"));
+            self.fs_icon.set_icon_name(Some("view-restore-symbolic"));
         } else {
-            self.fs_icon
-                .set_icon_name(Some("view-fullscreen-symbolic"));
+            self.fs_icon.set_icon_name(Some("view-fullscreen-symbolic"));
         }
-
-
     }
 }

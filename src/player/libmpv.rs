@@ -554,7 +554,11 @@ impl LibMpv {
     }
 
     pub fn seek_absolute(&self, seconds: f64) -> Result<(), String> {
-        self.command(&["seek", &seconds.to_string(), "absolute"])
+        self.command(&["seek", &seconds.to_string(), "absolute+exact"])
+    }
+
+    pub fn seek_absolute_preview(&self, seconds: f64) -> Result<(), String> {
+        self.command(&["seek", &seconds.to_string(), "absolute+keyframes"])
     }
 
     pub fn set_speed(&self, speed: f64) -> Result<(), String> {

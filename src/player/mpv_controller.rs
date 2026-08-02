@@ -49,6 +49,7 @@ impl MpvController {
             AppCommand::OpenFile(path) => self.load_media(path),
             AppCommand::TogglePause => self.toggle_pause(),
             AppCommand::SeekRelative(seconds) => self.seek_relative(seconds),
+            AppCommand::SeekPreview(seconds) => self.seek_preview(seconds),
             AppCommand::SeekAbsolute(seconds) => self.seek_absolute(seconds),
             AppCommand::SetVolume(volume) => self.set_volume(volume),
             AppCommand::SelectSubtitle(track_id) => self.select_subtitle(track_id),
@@ -137,13 +138,13 @@ impl MpvController {
     fn seek_absolute(&mut self, seconds: f64) -> Result<Vec<BackendEvent>, String> {
         self.require_media()?;
         self.backend()?.seek_absolute(seconds)?;
+        Ok(Vec::new())
+    }
 
-        let mut events = self.refresh_state_events()?;
-        events.push(BackendEvent::Status(format!(
-            "跳转到 {:.0} 秒。",
-            seconds
-        )));
-        Ok(events)
+    fn seek_preview(&mut self, seconds: f64) -> Result<Vec<BackendEvent>, String> {
+        self.require_media()?;
+        self.backend()?.seek_absolute_preview(seconds)?;
+        Ok(Vec::new())
     }
 
     fn set_volume(&mut self, volume: f64) -> Result<Vec<BackendEvent>, String> {
@@ -265,11 +266,7 @@ impl MpvController {
         Ok(events)
     }
 
-    fn set_ab_loop(
-        &mut self,
-        a: Option<f64>,
-        b: Option<f64>,
-    ) -> Result<Vec<BackendEvent>, String> {
+    fn set_ab_loop(&mut self, a: Option<f64>, b: Option<f64>) -> Result<Vec<BackendEvent>, String> {
         self.require_media()?;
         self.backend()?.set_ab_loop_a(a)?;
         self.backend()?.set_ab_loop_b(b)?;
@@ -295,7 +292,11 @@ impl MpvController {
 
         let mut events = self.refresh_state_events()?;
         events.push(BackendEvent::MuteChanged(new_mute));
-        let status = if new_mute { "已静音" } else { "已取消静音" };
+        let status = if new_mute {
+            "已静音"
+        } else {
+            "已取消静音"
+        };
         events.push(BackendEvent::Status(status.to_string()));
         Ok(events)
     }

@@ -1,276 +1,561 @@
-/* VMedia — IINA-style pure-icon control bar */
+/* VMedia — IINA-inspired dark immersive player theme */
 
-window {
-    background-color: #1a1a1e;
-    color: #e8e8ec;
+window.vmedia-window {
+    color: #eceef2;
+    background-color: #08090b;
 }
+
+/* ── Compact window chrome ─────────────────────────────────────── */
+
+headerbar.app-header {
+    min-height: 52px;
+    padding: 0 12px;
+    color: rgba(244, 246, 250, 0.88);
+    background-color: #505258;
+    background-image: linear-gradient(
+        to bottom,
+        #5a5c63,
+        #4d4f55
+    );
+    border-bottom: 1px solid rgba(0, 0, 0, 0.42);
+    box-shadow: none;
+}
+
+headerbar.app-header button {
+    min-width: 30px;
+    min-height: 30px;
+    padding: 0;
+    color: rgba(239, 242, 247, 0.72);
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-radius: 7px;
+    box-shadow: none;
+}
+
+headerbar.app-header button:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.09);
+}
+
+.app-title {
+    color: rgba(238, 239, 242, 0.72);
+    font-size: 17px;
+    font-weight: 700;
+}
+
+/* ── Video surface and empty state ─────────────────────────────── */
 
 .video-area {
     background-color: #000000;
 }
 
-/* ── Placeholder ── */
 .placeholder-container {
-    background: transparent;
+    padding: 24px;
+    background-color: #090a0c;
+    background-image: linear-gradient(
+        155deg,
+        #101216,
+        #08090b 58%,
+        #050607
+    );
 }
 
-.placeholder-icon {
-    opacity: 0.35;
-    color: #888;
-    -gtk-icon-size: 80px;
+.placeholder-card {
+    min-width: 420px;
+    padding: 18px 28px;
+    color: #eef0f4;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.placeholder-card.loading-state {
+    min-width: 320px;
+    padding: 18px 24px;
+}
+
+.placeholder-icon-shell {
+    min-width: 62px;
+    min-height: 62px;
+    margin-bottom: 4px;
+    color: #f4f6fa;
+    background-color: rgba(255, 255, 255, 0.065);
+    background-image: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+}
+
+.placeholder-icon,
+.placeholder-spinner {
+    color: #7da2ff;
 }
 
 .placeholder-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: #b0b0b8;
+    color: rgba(247, 248, 251, 0.94);
+    font-size: 19px;
+    font-weight: 650;
 }
 
 .placeholder-hint {
-    font-size: 13px;
-    color: #555560;
-    line-height: 2;
+    color: rgba(221, 225, 232, 0.48);
+    font-size: 12px;
 }
 
-/* ── Back button ← ── */
-.back-button {
-    background-color: rgba(255,255,255,0.1);
-    color: #fff;
-    border-radius: 50%;
-    min-width: 36px;
-    min-height: 36px;
-    padding: 6px;
-    border: 1px solid rgba(255,255,255,0.12);
-}
-.back-button:hover {
-    background-color: rgba(255,255,255,0.18);
+button.empty-open-button {
+    min-height: 34px;
+    margin-top: 6px;
+    padding: 4px 16px;
+    color: #ffffff;
+    background-color: #5f8df7;
+    background-image: none;
+    border: 1px solid rgba(151, 181, 255, 0.28);
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(45, 91, 204, 0.25);
+    font-size: 12px;
+    font-weight: 650;
 }
 
-/* ── Bottom wrapper ── */
+button.empty-open-button:hover {
+    background-color: #6d99ff;
+    box-shadow: 0 8px 24px rgba(45, 91, 204, 0.32);
+}
+
+button.empty-open-button:active {
+    background-color: #507de6;
+    box-shadow: none;
+}
+
+.shortcut-row {
+    margin-top: 8px;
+}
+
+.shortcut-chip {
+    padding: 5px 9px;
+    color: rgba(225, 229, 235, 0.44);
+    background-color: rgba(255, 255, 255, 0.045);
+    background-image: none;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 7px;
+    font-size: 9px;
+    font-weight: 600;
+}
+
+/* ── Compact floating playback controls ────────────────────────── */
+
 .controls-bottom {
-    background: transparent;
     padding: 0;
+    background: transparent;
 }
 
-/* ═══════════════════════════════
-   GLASS PANEL — floating bar
-   ═══════════════════════════════ */
 .control-bar {
-    background-color: rgba(20, 20, 26, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    border-radius: 6px;
-    padding: 6px 6px 6px 6px;
+    padding: 10px 14px 9px;
+    color: #f7f7f8;
+    background-color: rgba(112, 113, 117, 0.94);
+    background-image: linear-gradient(
+        to bottom,
+        rgba(127, 128, 132, 0.95),
+        rgba(103, 104, 108, 0.95)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 10px;
+    box-shadow: 0 9px 28px rgba(0, 0, 0, 0.32);
 }
 
+.seek-row {
+    padding: 0 4px;
+}
 
-
-/* ── Seek Bar ── */
 .seek-bar {
-    padding: 6px 0;
+    padding: 5px 0;
 }
+
 .seek-bar trough {
-    min-height: 2px;
-    border-radius: 1px;
-    background-color: rgba(255,255,255,0.15);
+    min-height: 4px;
+    background-color: rgba(225, 226, 228, 0.30);
+    border-radius: 999px;
 }
+
 .seek-bar trough highlight {
-    background-color: rgba(255,255,255,0.85);
-    border-radius: 1px;
-    min-height: 2px;
+    min-height: 4px;
+    background-color: rgba(238, 239, 241, 0.72);
+    border-radius: 999px;
 }
+
 .seek-bar slider {
-    min-width: 8px;
-    min-height: 8px;
-    border-radius: 50%;
-    background-color: #ffffff;
-    border: none;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    margin: -3px 0;
-}
-.seek-bar:hover trough {
-    min-height: 3px;
-}
-.seek-bar:hover trough highlight {
-    min-height: 3px;
-}
-.seek-bar:hover slider {
-    min-width: 10px;
-    min-height: 10px;
-}
-
-/* ── Time label ── */
-.time-label {
-    font-size: 10px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.45);
-    font-variant-numeric: tabular-nums;
-    min-width: 36px;
-}
-
-/* ══════════════════════════
-   TRANSPORT — pure icon buttons
-   ══════════════════════════ */
-
-/* Skip prev/next — small circular icon buttons */
-.transport-btn {
-    color: rgba(255,255,255,0.7);
-    min-width: 24px;
-    min-height: 24px;
-    padding: 0;
+    min-width: 6px;
+    min-height: 16px;
     margin: 0;
+    background-color: #dadbdd;
+    background-image: none;
     border: none;
-    outline: none;
-    background: transparent;
-    -gtk-icon-size: 14px;
-}
-.transport-btn:hover {
-    color: #ffffff;
+    border-radius: 2px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.38);
 }
 
-/* Play/Pause — circular button */
-.play-btn {
-    background-color: rgba(255,255,255,0.1);
-    color: #ffffff;
-    min-width: 30px;
-    min-height: 30px;
+.seek-bar:hover trough,
+.seek-bar:hover trough highlight {
+    min-height: 5px;
+}
+
+.seek-bar:disabled {
+    opacity: 0.42;
+}
+
+.time-label {
+    min-width: 50px;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.controls-row {
+    min-height: 46px;
+}
+
+.control-group {
+    min-height: 44px;
+}
+
+button.transport-btn,
+button.ctrl-icon,
+menubutton.ctrl-icon > button {
+    color: rgba(255, 255, 255, 0.90);
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+}
+
+button.transport-btn {
+    min-width: 40px;
+    min-height: 40px;
     padding: 0;
-    margin: 0 2px;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 50%;
+    border-radius: 7px;
+    -gtk-icon-size: 22px;
+}
+
+button.transport-btn:hover,
+button.ctrl-icon:hover,
+menubutton.ctrl-icon > button:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.10);
+}
+
+button.transport-btn:active,
+button.ctrl-icon:active,
+menubutton.ctrl-icon > button:active {
+    background-color: rgba(113, 154, 255, 0.18);
+}
+
+button.play-btn {
+    min-width: 46px;
+    min-height: 46px;
+    padding: 0;
+    color: #ffffff;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+button.play-btn:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+}
+
+button.play-btn:active {
+    background-color: rgba(255, 255, 255, 0.16);
+    box-shadow: none;
+}
+
+button.ctrl-icon,
+menubutton.ctrl-icon > button {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0 6px;
+    border-radius: 8px;
     -gtk-icon-size: 16px;
 }
-.play-btn:hover {
-    background-color: rgba(255,255,255,0.18);
-}
-.play-btn:active {
-    background-color: rgba(255,255,255,0.25);
-}
 
-/* ── Control icons (mute, speed, fullscreen, open) ── */
-.ctrl-icon {
-    color: rgba(255,255,255,0.55);
-    min-width: 20px;
-    min-height: 20px;
-    padding: 0;
-    margin: 0;
-    border: none;
-    background: transparent;
-}
-.ctrl-icon:hover {
-    color: #ffffff;
-}
-
-/* ── Speed label inside button ── */
 .speed-label {
+    color: inherit;
     font-size: 11px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.55);
+    font-weight: 650;
 }
 
-/* ── Volume popover ── */
-.volume-popover contents {
-    background-color: rgba(28,28,34,0.95);
-    border-radius: 8px;
-    padding: 6px 2px;
-}
-
-.volume-slider-vertical trough {
-    min-width: 3px;
-    border-radius: 2px;
-    background-color: rgba(255,255,255,0.1);
-}
-.volume-slider-vertical trough highlight {
-    background-color: #6c5ce7;
-    border-radius: 2px;
-}
-.volume-slider-vertical slider {
-    min-width: 10px;
-    min-height: 10px;
-    border-radius: 50%;
-    background-color: #ffffff;
-    border: none;
-    margin: 0 -3px;
-}
-
-/* ── Status ── */
 .status-label {
-    font-size: 11px;
-    color: rgba(255,255,255,0.3);
     margin-top: 2px;
+    color: rgba(229, 232, 238, 0.48);
+    font-size: 10px;
 }
 
-/* ── Info label ── */
 .info-label {
-    font-size: 11px;
-    color: rgba(255,255,255,0.3);
-    padding: 4px 8px 0 8px;
+    padding: 3px 7px 0;
+    color: rgba(229, 232, 238, 0.42);
+    font-size: 10px;
 }
 
-/* ── Header ── */
-headerbar {
-    background-color: rgba(22, 22, 26, 0.95);
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    min-height: 36px;
-}
+/* ── Dark popovers and volume control ──────────────────────────── */
 
-/* ── Popover ── */
 popover contents {
-    background-color: rgba(28,28,34,0.95);
+    padding: 5px;
+    color: #eef0f4;
+    background-color: rgba(27, 28, 33, 0.98);
+    background-image: none;
+    border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: 10px;
-    padding: 4px;
-}
-popover modelbutton {
-    color: #e0e0e0;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-}
-popover modelbutton:hover {
-    background-color: rgba(108,92,231,0.25);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.48);
 }
 
-/* ═══════════════════════════════
-   PLAYLIST PANEL — right slide
-   ═══════════════════════════════ */
+.volume-slider trough {
+    min-height: 5px;
+    background-color: rgba(218, 219, 221, 0.35);
+    border-radius: 999px;
+}
+
+.volume-slider trough highlight {
+    min-height: 5px;
+    background-color: #4c83f1;
+    border-radius: 999px;
+}
+
+.volume-slider slider {
+    min-width: 14px;
+    min-height: 14px;
+    margin: 0;
+    background-color: #c7c8ca;
+    background-image: none;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+popover modelbutton {
+    min-height: 28px;
+    padding: 4px 9px;
+    color: rgba(238, 241, 246, 0.78);
+    border-radius: 7px;
+    font-size: 11px;
+}
+
+popover modelbutton:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Right playlist drawer ─────────────────────────────────────── */
+
 .playlist-panel {
-    background-color: rgba(22, 22, 28, 0.82);
-    border-left: 1px solid rgba(255,255,255,0.06);
     padding: 0;
-    border-radius: 8px 0 0 8px;
+    color: #f1f1f2;
+    background-color: rgba(84, 85, 89, 0.97);
+    background-image: linear-gradient(
+        to bottom,
+        rgba(91, 92, 96, 0.98),
+        rgba(78, 79, 83, 0.98)
+    );
+    border-left: 1px solid rgba(0, 0, 0, 0.30);
+    border-radius: 0;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.20);
+}
+
+.playlist-tabs {
+    min-height: 72px;
+    background-color: rgba(66, 67, 71, 0.58);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+button.playlist-tab {
+    min-height: 72px;
+    color: rgba(231, 232, 234, 0.42);
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+button.playlist-tab.active {
+    color: #ffffff;
 }
 
 .playlist-header {
-    padding: 12px 16px 8px 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 14px 14px 12px;
+    background-color: rgba(255, 255, 255, 0.025);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.065);
+    border-radius: 12px 12px 0 0;
 }
 
 .playlist-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.7);
+    color: rgba(246, 247, 250, 0.92);
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.playlist-count {
+    min-width: 17px;
+    padding: 1px 6px;
+    color: #a9c0ff;
+    background-color: rgba(113, 154, 255, 0.16);
+    background-image: none;
+    border: 1px solid rgba(113, 154, 255, 0.16);
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 650;
+}
+
+.playlist-subtitle {
+    color: rgba(218, 222, 229, 0.40);
+    font-size: 9px;
+}
+
+button.playlist-close-button {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+    color: rgba(232, 235, 241, 0.55);
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-radius: 7px;
+}
+
+button.playlist-close-button:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.playlist-scroll,
+.playlist-scroll viewport,
+.playlist-scroll undershoot {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
 }
 
 .playlist-list {
-    background: transparent;
+    padding: 0;
+    background-color: transparent;
+    background-image: none;
 }
 
 .playlist-item {
-    padding: 6px 16px;
+    margin: 0;
+    padding: 10px 18px;
+    color: rgba(245, 245, 246, 0.82);
+    background-color: transparent;
+    background-image: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 0;
-    background: transparent;
 }
+
 .playlist-item:hover {
-    background-color: rgba(255,255,255,0.05);
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.08);
 }
+
 .playlist-item:selected {
-    background-color: rgba(108,92,231,0.2);
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.055);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.playlist-item-icon {
+    color: #ffffff;
+}
+
+.playlist-item:selected .playlist-item-icon {
+    color: #ffffff;
 }
 
 .playlist-item-label {
-    font-size: 13px;
-    color: rgba(255,255,255,0.6);
-}
-.playlist-item:selected .playlist-item-label {
-    color: #b8a9ff;
+    color: inherit;
+    font-size: 16px;
     font-weight: 600;
+}
+
+.playlist-item:selected .playlist-item-label {
+    color: #ffffff;
+    font-weight: 650;
+}
+
+.playlist-item-duration {
+    color: rgba(240, 240, 241, 0.58);
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.playlist-footer {
+    min-height: 54px;
+    padding: 0 8px;
+    background-color: rgba(63, 64, 68, 0.68);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.playlist-total {
+    color: rgba(247, 247, 248, 0.72);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+button.playlist-footer-button {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0;
+    color: rgba(245, 245, 246, 0.72);
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-radius: 6px;
+    box-shadow: none;
+    -gtk-icon-size: 18px;
+}
+
+button.playlist-footer-button:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.09);
+}
+
+scrollbar {
+    background: transparent;
+}
+
+scrollbar slider {
+    min-width: 4px;
+    min-height: 28px;
+    background-color: rgba(232, 235, 241, 0.18);
+    border: 2px solid transparent;
+    border-radius: 999px;
+}
+
+scrollbar slider:hover {
+    background-color: rgba(232, 235, 241, 0.30);
+}
+
+/* ── Focus and tooltips ─────────────────────────────────────────── */
+
+button:focus-visible,
+scale:focus-visible {
+    outline: 2px solid rgba(113, 154, 255, 0.68);
+    outline-offset: 2px;
+}
+
+tooltip {
+    padding: 3px;
+    color: #f6f7fa;
+    background-color: #24262c;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 7px;
+}
+
+tooltip label {
+    color: #f6f7fa;
+    font-size: 10px;
 }

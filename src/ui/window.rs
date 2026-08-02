@@ -16,6 +16,8 @@ type CommandHandler = Rc<dyn Fn(AppCommand)>;
 #[derive(Clone)]
 pub struct AppWindow {
     window: adw::ApplicationWindow,
+    toolbar_view: adw::ToolbarView,
+    title_label: gtk::Label,
     player_view: PlayerView,
 }
 
@@ -28,13 +30,16 @@ impl AppWindow {
         let config = AppConfig::default();
         let player_view = PlayerView::new(render_backend);
 
+        let title_label = gtk::Label::builder()
+            .label("VMedia")
+            .ellipsize(gtk::pango::EllipsizeMode::Middle)
+            .max_width_chars(64)
+            .css_classes(["app-title"])
+            .build();
+
         let header_bar = adw::HeaderBar::new();
-        header_bar.set_title_widget(Some(
-            &gtk::Label::builder()
-                .label(config.window_title)
-                .css_classes(["heading"])
-                .build(),
-        ));
+        header_bar.add_css_class("app-header");
+        header_bar.set_title_widget(Some(&title_label));
 
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header_bar);
@@ -47,18 +52,15 @@ impl AppWindow {
             .default_height(config.default_height)
             .content(&toolbar_view)
             .build();
+        window.add_css_class("vmedia-window");
 
         let controls = player_view.controls();
         connect_open_button(&window, controls, on_command.clone());
+        connect_empty_open_button(&player_view, controls);
         connect_transport_buttons(&window, controls, on_command.clone());
         connect_seek_bar(controls, on_command.clone());
         connect_speed_button(controls, on_command.clone());
         connect_mute_button(controls, on_command.clone());
-        // Back button → Stop
-        let cmd = on_command.clone();
-        player_view
-            .back_button
-            .connect_clicked(move |_| cmd(AppCommand::Stop));
         connect_right_click_menu(&window, &player_view, on_command.clone());
         connect_video_click(&player_view, &window, on_command.clone());
         connect_keyboard_shortcuts(&window, controls, on_command.clone());
@@ -83,6 +85,8 @@ impl AppWindow {
 
         Self {
             window,
+            toolbar_view,
+            title_label,
             player_view,
         }
     }
@@ -93,6 +97,18 @@ impl AppWindow {
 
     pub fn render(&self, state: &AppState) {
         self.player_view.render(state);
+
+        let title = state
+            .playback
+            .current_media
+            .as_ref()
+            .and_then(|media| media.path.file_name())
+            .and_then(|name| name.to_str())
+            .unwrap_or("VMedia");
+        self.title_label.set_text(title);
+        self.window.set_title(Some(title));
+        self.toolbar_view
+            .set_reveal_top_bars(!state.playback.is_fullscreen);
 
         if state.playback.is_fullscreen {
             self.window.fullscreen();
@@ -158,6 +174,13 @@ fn connect_open_button(
     });
 }
 
+fn connect_empty_open_button(player_view: &PlayerView, controls: &super::widgets::PlayerControls) {
+    let open_button = controls.open_button.clone();
+    player_view
+        .empty_open_button
+        .connect_clicked(move |_| open_button.emit_clicked());
+}
+
 fn connect_transport_buttons(
     window: &adw::ApplicationWindow,
     controls: &super::widgets::PlayerControls,
@@ -189,15 +212,57 @@ fn connect_transport_buttons(
 }
 
 fn connect_seek_bar(controls: &super::widgets::PlayerControls, on_command: CommandHandler) {
-    controls
-        .seek_bar()
-        .bind_seek(move |pos| on_command(AppCommand::SeekAbsolute(pos)));
+    const PREVIEW_INTERVAL: std::time::Duration = std::time::Duration::from_millis(80);
+
+    let pending_preview = Rc::new(Cell::new(None::<f64>));
+    let preview_timer: Rc<std::cell::RefCell<Option<glib::SourceId>>> =
+        Rc::new(std::cell::RefCell::new(None));
+
+    let preview_controls = controls.clone();
+    let preview_command = on_command.clone();
+    let pending_for_preview = pending_preview.clone();
+    let timer_for_preview = preview_timer.clone();
+
+    let commit_controls = controls.clone();
+    let pending_for_commit = pending_preview;
+    let timer_for_commit = preview_timer;
+
+    controls.seek_bar().bind_seek(
+        move |pos| {
+            // The thumb and labels update immediately, independently of mpv.
+            preview_controls.preview_seek_position(pos);
+            pending_for_preview.set(Some(pos));
+
+            // Coalesce rapid pointer updates into at most one keyframe seek
+            // every 80ms, always using the newest requested position.
+            if timer_for_preview.borrow().is_some() {
+                return;
+            }
+
+            let pending = pending_for_preview.clone();
+            let timer = timer_for_preview.clone();
+            let command = preview_command.clone();
+            let id = glib::timeout_add_local_once(PREVIEW_INTERVAL, move || {
+                timer.borrow_mut().take();
+                if let Some(latest) = pending.take() {
+                    command(AppCommand::SeekPreview(latest));
+                }
+            });
+            *timer_for_preview.borrow_mut() = Some(id);
+        },
+        move |pos| {
+            // Release cancels any queued preview and performs one exact seek.
+            if let Some(id) = timer_for_commit.borrow_mut().take() {
+                let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| id.remove()));
+            }
+            pending_for_commit.set(None);
+            commit_controls.preview_seek_position(pos);
+            on_command(AppCommand::SeekAbsolute(pos));
+        },
+    );
 }
 
-fn connect_speed_button(
-    controls: &super::widgets::PlayerControls,
-    on_command: CommandHandler,
-) {
+fn connect_speed_button(controls: &super::widgets::PlayerControls, on_command: CommandHandler) {
     let speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
     let idx = std::cell::Cell::new(2usize);
     controls.speed_button.connect_clicked(move |_| {
@@ -207,10 +272,7 @@ fn connect_speed_button(
     });
 }
 
-fn connect_mute_button(
-    controls: &super::widgets::PlayerControls,
-    on_command: CommandHandler,
-) {
+fn connect_mute_button(controls: &super::widgets::PlayerControls, on_command: CommandHandler) {
     controls
         .mute_button
         .connect_clicked(move |_| on_command(AppCommand::ToggleMute));
@@ -412,6 +474,7 @@ fn connect_controls_autohide(player_view: &PlayerView) {
     let wrapper = player_view.controls_wrapper.clone();
     let hide_timer: Rc<std::cell::RefCell<Option<glib::SourceId>>> =
         Rc::new(std::cell::RefCell::new(None));
+    let pointer_over_controls = Rc::new(Cell::new(false));
 
     let show_controls = {
         let wrapper = wrapper.clone();
@@ -443,12 +506,15 @@ fn connect_controls_autohide(player_view: &PlayerView) {
     // Use Capture phase so events are seen before GLArea child consumes them
     let motion = gtk::EventControllerMotion::new();
     motion.set_propagation_phase(gtk::PropagationPhase::Capture);
+    let show_on_hover = show_controls.clone();
+    let cancel_on_hover = cancel_timer.clone();
     let show = show_controls;
     let cancel = cancel_timer;
     let hide = hide_controls;
     let timer = hide_timer;
     let seek_bar = player_view.controls().seek_bar().clone();
     let w = wrapper;
+    let is_hovered = pointer_over_controls.clone();
     let show_and_schedule = {
         let show = show.clone();
         let cancel = cancel.clone();
@@ -456,29 +522,57 @@ fn connect_controls_autohide(player_view: &PlayerView) {
         let timer = timer.clone();
         let seek_bar = seek_bar.clone();
         let w = w.clone();
+        let is_hovered = is_hovered.clone();
         move || {
             show();
             cancel();
+            if is_hovered.get() {
+                return;
+            }
             let hc = hide.clone();
             let tr = timer.clone();
             let sb = seek_bar.clone();
             let wr = w.clone();
-            let id = glib::timeout_add_local_once(
-                std::time::Duration::from_millis(1500),
-                move || {
+            let hovered = is_hovered.clone();
+            let id =
+                glib::timeout_add_local_once(std::time::Duration::from_millis(2200), move || {
                     tr.borrow_mut().take();
-                    if sb.is_dragging() { return; }
-                    if wr.has_css_class("has-media") { hc(); }
-                },
-            );
+                    if hovered.get() || sb.is_dragging() {
+                        return;
+                    }
+                    if wr.has_css_class("has-media") {
+                        hc();
+                    }
+                });
             *timer.borrow_mut() = Some(id);
         }
     };
     let ss1 = show_and_schedule.clone();
-    motion.connect_motion(move |_, _x, _y| { ss1(); });
-    let ss2 = show_and_schedule;
-    motion.connect_enter(move |_, _x, _y| { ss2(); });
+    motion.connect_motion(move |_, _x, _y| {
+        ss1();
+    });
+    let ss2 = show_and_schedule.clone();
+    motion.connect_enter(move |_, _x, _y| {
+        ss2();
+    });
     player_view.widget().add_controller(motion);
+
+    // Hovering the controls pins them in place. Leaving resumes the same
+    // delayed hide behavior used by the rest of the player surface.
+    let controls_motion = gtk::EventControllerMotion::new();
+    let hovered_on_enter = pointer_over_controls.clone();
+    controls_motion.connect_enter(move |_, _, _| {
+        hovered_on_enter.set(true);
+        show_on_hover();
+        cancel_on_hover();
+    });
+    let hovered_on_leave = pointer_over_controls;
+    let schedule_on_leave = show_and_schedule;
+    controls_motion.connect_leave(move |_| {
+        hovered_on_leave.set(false);
+        schedule_on_leave();
+    });
+    w.add_controller(controls_motion);
 }
 
 /// Make controls draggable: GestureDrag on the OVERLAY (stable coordinates).
@@ -568,44 +662,54 @@ fn connect_controls_drag(player_view: &PlayerView) {
     overlay.add_controller(drag);
 }
 
-/// Keep controls width at 60% of window and reset position on resize.
+/// Keep the floating controls stable. The playlist is a true overlay and must
+/// not resize or shift the controls when it opens.
 fn connect_controls_resize(_window: &adw::ApplicationWindow, player_view: &PlayerView) {
     let wrapper = player_view.controls_wrapper.clone();
     let overlay = player_view.widget().clone();
+    let panel = player_view.playlist_panel.root.clone();
 
     // Initial sizing
     {
         let wrapper = wrapper.clone();
         let overlay = overlay.clone();
+        let panel = panel.clone();
         glib::idle_add_local_once(move || {
-            let ow = overlay.width();
-            if ow > 100 {
-                let target = (ow as f64 * 0.60).min(600.0) as i32;
-                wrapper.set_size_request(target, -1);
-            }
+            apply_player_layout(overlay.width(), &wrapper, &panel);
         });
     }
 
-    // Track size changes via a periodic check in the render loop.
-    // Use notify on the native surface to detect size changes.
     let last_width: Rc<Cell<i32>> = Rc::new(Cell::new(0));
     let wrapper2 = wrapper;
     let overlay2 = overlay;
-    // Poll every frame using add_tick_callback for resize
+    let panel2 = panel;
     overlay2.add_tick_callback(move |ov, _| {
         let ow = ov.width();
         if ow != last_width.get() && ow > 100 {
             last_width.set(ow);
-            let target = (ow as f64 * 0.60).min(600.0) as i32;
-            wrapper2.set_size_request(target, -1);
-            // Reset to centered-bottom so controls are never off-screen
-            wrapper2.set_halign(gtk::Align::Center);
-            wrapper2.set_valign(gtk::Align::End);
-            wrapper2.set_margin_start(0);
-            wrapper2.set_margin_top(0);
-            wrapper2.set_margin_end(0);
-            wrapper2.set_margin_bottom(6);
+            apply_player_layout(ow, &wrapper2, &panel2);
         }
         glib::ControlFlow::Continue
     });
+}
+
+fn apply_player_layout(overlay_width: i32, controls: &gtk::Box, playlist: &gtk::Box) {
+    if overlay_width <= 100 {
+        return;
+    }
+
+    let preferred_panel_width = (overlay_width as f64 * 0.36).clamp(360.0, 720.0) as i32;
+    let panel_width = preferred_panel_width.min(overlay_width.saturating_sub(440).max(320));
+    playlist.set_size_request(panel_width, -1);
+
+    let controls_width = ((overlay_width as f64 * 0.56).clamp(460.0, 820.0) as i32)
+        .min(overlay_width.saturating_sub(28))
+        .max(280);
+    controls.set_size_request(controls_width, -1);
+    controls.set_halign(gtk::Align::Center);
+    controls.set_valign(gtk::Align::End);
+    controls.set_margin_start(0);
+    controls.set_margin_top(0);
+    controls.set_margin_end(0);
+    controls.set_margin_bottom(32);
 }

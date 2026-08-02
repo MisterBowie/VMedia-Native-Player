@@ -6,6 +6,7 @@ pub enum AppCommand {
     OpenFile(PathBuf),
     TogglePause,
     SeekRelative(f64),
+    SeekPreview(f64),
     SeekAbsolute(f64),
     SetVolume(f64),
     SelectSubtitle(i64),

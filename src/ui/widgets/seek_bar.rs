@@ -29,15 +29,6 @@ impl SeekBar {
         });
         scale.add_controller(press);
 
-        let drag_flag = dragging.clone();
-        let release = gtk::GestureClick::new();
-        release.connect_released(move |_, _, _, _| {
-            drag_flag.set(false);
-        });
-        // Use released on a separate gesture with propagation phase Target
-        release.set_propagation_phase(gtk::PropagationPhase::Bubble);
-        scale.add_controller(release);
-
         Self {
             scale,
             updating: Rc::new(Cell::new(false)),
@@ -69,18 +60,28 @@ impl SeekBar {
         self.updating.set(false);
     }
 
-    /// Bind a callback that fires when the USER changes the seek position.
-    /// Programmatic updates (from set_position) are ignored.
-    pub fn bind_seek<F>(&self, on_seek: F)
+    /// Preview fires while dragging; commit fires once when the pointer is
+    /// released. Programmatic updates from `set_position` are ignored.
+    pub fn bind_seek<FPreview, FCommit>(&self, on_preview: FPreview, on_commit: FCommit)
     where
-        F: Fn(f64) + 'static,
+        FPreview: Fn(f64) + 'static,
+        FCommit: Fn(f64) + 'static,
     {
         let updating = self.updating.clone();
         self.scale.connect_value_changed(move |scale| {
-            // Only seek when it's a user action, not our programmatic update
             if !updating.get() {
-                on_seek(scale.value());
+                on_preview(scale.value());
             }
         });
+
+        let scale = self.scale.clone();
+        let dragging = self.dragging.clone();
+        let release = gtk::GestureClick::new();
+        release.set_propagation_phase(gtk::PropagationPhase::Bubble);
+        release.connect_released(move |_, _, _, _| {
+            dragging.set(false);
+            on_commit(scale.value());
+        });
+        self.scale.add_controller(release);
     }
 }

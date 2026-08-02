@@ -17,11 +17,16 @@ pub struct PlayerView {
     overlay: gtk::Overlay,
     pub gl_area: gtk::GLArea,
     placeholder_box: gtk::Box,
+    placeholder_card: gtk::Box,
+    placeholder_icon: gtk::Image,
+    placeholder_spinner: gtk::Spinner,
+    placeholder_title: gtk::Label,
     placeholder_label: gtk::Label,
+    placeholder_shortcuts: gtk::Box,
     controls: PlayerControls,
     pub controls_wrapper: gtk::Box,
     info_label: gtk::Label,
-    pub back_button: gtk::Button,
+    pub empty_open_button: gtk::Button,
     pub playlist_panel: PlaylistPanel,
 
     has_render_backend: bool,
@@ -45,45 +50,89 @@ impl PlayerView {
         gl_area.add_css_class("video-area");
 
         // ── Placeholder (empty state) ──
-        let placeholder_icon = gtk::Image::from_icon_name("video-x-generic-symbolic");
-        placeholder_icon.set_pixel_size(80);
+        let placeholder_icon = gtk::Image::from_icon_name("media-playback-start-symbolic");
+        placeholder_icon.set_pixel_size(34);
         placeholder_icon.add_css_class("placeholder-icon");
 
+        let placeholder_spinner = gtk::Spinner::builder()
+            .width_request(34)
+            .height_request(34)
+            .visible(false)
+            .css_classes(["placeholder-spinner"])
+            .build();
+
+        let placeholder_icon_shell = gtk::Box::builder()
+            .halign(gtk::Align::Center)
+            .valign(gtk::Align::Center)
+            .css_classes(["placeholder-icon-shell"])
+            .build();
+        placeholder_icon_shell.append(&placeholder_icon);
+        placeholder_icon_shell.append(&placeholder_spinner);
+
         let placeholder_title = gtk::Label::builder()
-            .label("未打开媒体文件")
+            .label("打开媒体，开始播放")
             .css_classes(["placeholder-title"])
             .build();
 
         let placeholder_label = gtk::Label::builder()
-            .label("空格=暂停  ←→=快进  ↑↓=音量  f=全屏\ns=截图  m=静音  []=倍速  q=停止")
+            .label("选择一个本地视频或音频文件，享受清爽、专注的播放体验。")
             .justify(gtk::Justification::Center)
             .wrap(true)
+            .max_width_chars(46)
             .css_classes(["placeholder-hint"])
             .build();
 
-        let placeholder_box = gtk::Box::builder()
+        let open_button_content = adw::ButtonContent::builder()
+            .icon_name("document-open-symbolic")
+            .label("打开媒体文件")
+            .build();
+        let empty_open_button = gtk::Button::builder()
+            .child(&open_button_content)
+            .halign(gtk::Align::Center)
+            .css_classes(["suggested-action", "empty-open-button"])
+            .tooltip_text("选择本地视频或音频文件")
+            .build();
+
+        let shortcuts = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .spacing(8)
+            .halign(gtk::Align::Center)
+            .css_classes(["shortcut-row"])
+            .build();
+        for shortcut in ["Space  播放 / 暂停", "← →  快退 / 快进", "F  全屏"] {
+            shortcuts.append(
+                &gtk::Label::builder()
+                    .label(shortcut)
+                    .css_classes(["shortcut-chip"])
+                    .build(),
+            );
+        }
+
+        let placeholder_card = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
-            .spacing(16)
+            .spacing(12)
             .halign(gtk::Align::Center)
             .valign(gtk::Align::Center)
+            .css_classes(["placeholder-card"])
+            .build();
+        placeholder_card.append(&placeholder_icon_shell);
+        placeholder_card.append(&placeholder_title);
+        placeholder_card.append(&placeholder_label);
+        placeholder_card.append(&empty_open_button);
+        placeholder_card.append(&shortcuts);
+
+        let placeholder_center = gtk::CenterBox::new();
+        placeholder_center.set_hexpand(true);
+        placeholder_center.set_vexpand(true);
+        placeholder_center.set_center_widget(Some(&placeholder_card));
+
+        let placeholder_box = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
             .hexpand(true)
             .vexpand(true)
             .css_classes(["placeholder-container"])
             .build();
-        placeholder_box.append(&placeholder_icon);
-        placeholder_box.append(&placeholder_title);
-        placeholder_box.append(&placeholder_label);
-
-        // ── Back button (top-left, like ← in player_view mockup) ──
-        let back_button = gtk::Button::builder()
-            .icon_name("go-previous-symbolic")
-            .halign(gtk::Align::Start)
-            .valign(gtk::Align::Start)
-            .margin_start(12)
-            .margin_top(12)
-            .css_classes(["back-button"])
-            .visible(false)
-            .build();
+        placeholder_box.append(&placeholder_center);
 
         // ── Bottom gradient overlay + controls ──
         let controls = PlayerControls::new();
@@ -101,7 +150,7 @@ impl PlayerView {
             .hexpand(false)
             .margin_start(0)
             .margin_end(0)
-            .margin_bottom(6)
+            .margin_bottom(32)
             .build();
         controls_wrapper.append(controls.widget());
 
@@ -112,9 +161,10 @@ impl PlayerView {
         let overlay = gtk::Overlay::new();
         overlay.set_child(Some(&gl_area));
         overlay.add_overlay(&placeholder_box);
-        overlay.add_overlay(&back_button);
-        overlay.add_overlay(&playlist_panel.root);
         overlay.add_overlay(&controls_wrapper);
+        // The playlist is intentionally last so it overlays the video and
+        // the right side of the controls, matching IINA's drawer behavior.
+        overlay.add_overlay(&playlist_panel.root);
         overlay.set_hexpand(true);
         overlay.set_vexpand(true);
 
@@ -137,11 +187,16 @@ impl PlayerView {
             overlay,
             gl_area,
             placeholder_box,
+            placeholder_card,
+            placeholder_icon,
+            placeholder_spinner,
+            placeholder_title,
             placeholder_label,
+            placeholder_shortcuts: shortcuts,
             controls,
             controls_wrapper,
             info_label,
-            back_button,
+            empty_open_button,
             playlist_panel,
             has_render_backend: render_backend.is_some(),
             fatal_render_error,
@@ -175,7 +230,6 @@ impl PlayerView {
         }
 
         let has_media = state.playback.current_media.is_some();
-        self.back_button.set_visible(has_media);
         // Tag for autohide: only auto-hide when media is loaded
         if has_media {
             self.controls_wrapper.add_css_class("has-media");
@@ -189,6 +243,8 @@ impl PlayerView {
         // Sync playlist with current media
         if let Some(media) = &state.playback.current_media {
             self.playlist_panel.update_for_media(&media.path);
+            self.playlist_panel
+                .set_media_duration(&media.path, state.playback.duration_seconds);
         }
 
         let render_error = active_render_error(
@@ -196,20 +252,43 @@ impl PlayerView {
             self.media_render_error.borrow().as_deref(),
         );
 
+        let is_preparing = render_error.is_none() && has_media && !self.has_rendered_frame.get();
+        if is_preparing {
+            self.placeholder_card.add_css_class("loading-state");
+            self.placeholder_icon.set_visible(false);
+            self.placeholder_spinner.set_visible(true);
+            self.placeholder_spinner.start();
+        } else {
+            self.placeholder_card.remove_css_class("loading-state");
+            self.placeholder_spinner.stop();
+            self.placeholder_spinner.set_visible(false);
+            self.placeholder_icon.set_visible(true);
+        }
+
         if let Some(err) = render_error {
+            self.placeholder_title.set_text("播放遇到问题");
             self.placeholder_label.set_text(&err);
+            self.empty_open_button.set_visible(true);
+            self.placeholder_shortcuts.set_visible(false);
             self.placeholder_box.set_visible(true);
         } else if has_media {
+            self.empty_open_button.set_visible(false);
+            self.placeholder_shortcuts.set_visible(false);
             if self.has_rendered_frame.get() {
                 self.placeholder_box.set_visible(false);
             } else {
-                self.placeholder_label.set_text("正在准备视频画面…");
+                self.placeholder_title.set_text("正在准备画面");
+                self.placeholder_label.set_text("视频即将开始播放…");
                 self.placeholder_box.set_visible(true);
             }
         } else {
             self.has_rendered_frame.set(false);
+            self.playlist_panel.root.set_visible(false);
+            self.placeholder_title.set_text("打开媒体，开始播放");
             self.placeholder_label
-                .set_text("空格=暂停  ←→=快进  ↑↓=音量  f=全屏\ns=截图  m=静音  []=倍速  q=停止");
+                .set_text("选择一个本地视频或音频文件，享受清爽、专注的播放体验。");
+            self.empty_open_button.set_visible(true);
+            self.placeholder_shortcuts.set_visible(true);
             self.placeholder_box.set_visible(true);
         }
 
@@ -237,21 +316,19 @@ fn connect_gl_area(
     let fe = fatal_render_error.clone();
     let me = media_render_error.clone();
     let hf = has_rendered_frame.clone();
-    gl_area.connect_realize(move |gl_area| {
-        match be.initialize_render_context(gl_area) {
-            Ok(()) => {
-                hf.set(false);
-                fe.borrow_mut().take();
-                me.borrow_mut().take();
-            }
-            Err(err) => {
-                hf.set(false);
-                error!(%err, "failed to initialize mpv render context");
-                let msg = format!("视频渲染初始化失败：{err}");
-                pl.set_text(&msg);
-                pb.set_visible(true);
-                *fe.borrow_mut() = Some(msg);
-            }
+    gl_area.connect_realize(move |gl_area| match be.initialize_render_context(gl_area) {
+        Ok(()) => {
+            hf.set(false);
+            fe.borrow_mut().take();
+            me.borrow_mut().take();
+        }
+        Err(err) => {
+            hf.set(false);
+            error!(%err, "failed to initialize mpv render context");
+            let msg = format!("视频渲染初始化失败：{err}");
+            pl.set_text(&msg);
+            pb.set_visible(true);
+            *fe.borrow_mut() = Some(msg);
         }
     });
 
